@@ -10,29 +10,38 @@ afterAll(async () => {
     await seed()
 })
 
-it('Gets contracts per id when user owns it', async () => {
-    const res = await request(app)
-        .get('/contracts/1')
-        .set('profile_id', 1)
-        .expect(200)
+describe('Get contracts per id', () => {
+    it('Fails when contract not found', async () => {
+        return request(app)
+            .get('/contracts/100')
+            .set('profile_id', 1)
+            .expect(404)
+    });
 
-    expect(res.body).toMatchObject(
-        {
-            id: 1,
-            terms: 'bla bla bla',
-            status: 'terminated',
-            ContractorId: 5,
-            ClientId: 1
-        }
-    )
-});
+    it('Fails when user does not own contract', async () => {
+        return request(app)
+            .get('/contracts/1')
+            .set('profile_id', 3)
+            .expect(403)
+    });
 
-it('Throws 403 in Get contracts per id when user does not own it', async () => {
-    return request(app)
-        .get('/contracts/1')
-        .set('profile_id', 3)
-        .expect(403)
-});
+    it('Works', async () => {
+        const res = await request(app)
+            .get('/contracts/1')
+            .set('profile_id', 1)
+            .expect(200)
+
+        expect(res.body).toMatchObject(
+            {
+                id: 1,
+                terms: 'bla bla bla',
+                status: 'terminated',
+                ContractorId: 5,
+                ClientId: 1
+            }
+        )
+    });
+})
 
 it('Gets contracts', async () => {
     const res = await request(app)
@@ -56,44 +65,184 @@ it('Gets unpaid jobs', async () => {
         .set('profile_id', 1)
         .expect(200)
 
-    expect(res.body[0].id).toEqual(1)
-    expect(res.body[1].id).toEqual(2)
+    expect(res.body).toMatchObject([{ id: 1 }, { id: 2 }])
 });
 
-it('Gets best profession', async () => {
-    return request(app)
-        .get('/admin/best-profession?start=2020-08-15&end=2020-08-16')
-        .expect(200)
-        .expect({
-            sum: 2362,
-            profession: "Programmer",
-        })
-});
+describe('Gets best profession', () => {
+    it('Works with just start date', async () => {
+        return request(app)
+            .get('/admin/best-profession?start=2020-08-15')
+            .expect(200)
+            .expect({
+                sum: 2562,
+                profession: "Programmer",
+            })
+    });
 
-it('Gets best clients', async () => {
-    return request(app)
-        .get('/admin/best-clients?start=2020-08-15&end=2020-08-16&limit=5')
-        .expect(200)
-        .expect([
+    it('Works with just end date', async () => {
+        return request(app)
+            .get('/admin/best-profession?end=2020-08-12')
+            .expect(200)
+            .expect({
+                sum: 21,
+                profession: "Musician",
+            })
+    });
+
+    it('Works with both start and end date', async () => {
+        return request(app)
+            .get('/admin/best-profession?start=2020-08-14&end=2020-08-16')
+            .expect(200)
+            .expect({
+                sum: 2483,
+                profession: "Programmer",
+            })
+    });
+
+    it('Works with no dates', async () => {
+        return request(app)
+            .get('/admin/best-profession')
+            .expect(200)
+            .expect({
+                sum: 2683,
+                profession: "Programmer",
+            })
+    });
+
+    it('Fails with invalid date', async () => {
+        await request(app)
+            .get('/admin/best-profession?start=2021-20-01')
+            .expect(400)
+
+        await request(app)
+            .get('/admin/best-profession?start=2021-05-1')
+            .expect(400)
+    });
+})
+
+describe('Gets best clients', () => {
+    it('Works with just start date', async () => {
+        const res = await request(app)
+            .get('/admin/best-clients?start=2020-08-15')
+            .expect(200)
+
+        expect(res.body).toContainEqual(
             {
                 sum: 2020,
                 ClientId: 4,
                 firstName: "Ash",
                 lastName: "Kethcum",
-            },
+            }
+        )
+        expect(res.body).toContainEqual(
             {
-                sum: 221,
+                sum: 421,
                 ClientId: 1,
                 firstName: "Harry",
                 lastName: "Potter",
-            },
+            }
+        )
+    })
+
+    it('Works with just end date', async () => {
+        const res = await request(app)
+            .get('/admin/best-clients?end=2020-08-15')
+            .expect(200)
+
+        expect(res.body).toContainEqual(
+            {
+                sum: 21,
+                ClientId: 1,
+                firstName: "Harry",
+                lastName: "Potter",
+            }
+        )
+        expect(res.body).toContainEqual(
+            {
+                sum: 121,
+                ClientId: 2,
+                firstName: "Mr",
+                lastName: "Robot",
+            }
+        )
+    })
+
+    it('Works with both start and end dates', async () => {
+        const res = await request(app)
+            .get('/admin/best-clients?start=2020-08-11&end=2020-08-15')
+            .expect(200)
+
+        expect(res.body).toContainEqual(
+
             {
                 sum: 121,
                 ClientId: 2,
                 firstName: "Mr",
                 lastName: "Robot",
             },
-        ])
+        )
+    })
+
+    it('Works with neither start or end dates', async () => {
+        const res = await request(app)
+            .get('/admin/best-clients')
+            .expect(200)
+
+        expect(res.body).toContainEqual(
+            {
+                sum: 2020,
+                ClientId: 4,
+                firstName: "Ash",
+                lastName: "Kethcum",
+            }
+        )
+        expect(res.body).toContainEqual(
+            {
+                sum: 442,
+                ClientId: 2,
+                firstName: "Mr",
+                lastName: "Robot",
+            }
+        )
+    })
+
+    it('Works with no results found', async () => {
+        return request(app)
+            .get('/admin/best-clients?start=2020-08-10&end=2020-08-10')
+            .expect(200)
+            .expect([])
+    })
+
+    it('Respects the limit', async () => {
+        const res = await request(app)
+            .get('/admin/best-clients?limit=3')
+            .expect(200)
+
+        expect(res.body).toContainEqual(
+            {
+                sum: 2020,
+                ClientId: 4,
+                firstName: "Ash",
+                lastName: "Kethcum",
+            }
+        )
+        expect(res.body).toContainEqual(
+            {
+                sum: 442,
+                ClientId: 2,
+                firstName: "Mr",
+                lastName: "Robot",
+            }
+        )
+        expect(res.body).toContainEqual(
+            {
+                sum: 442,
+                ClientId: 1,
+                firstName: "Harry",
+                lastName: "Potter",
+            }
+        )
+    })
 });
 
 describe('Pay for a job', () => {
@@ -103,7 +252,14 @@ describe('Pay for a job', () => {
         await request(app)
             .post('/jobs/60/pay')
             .set('profile_id', 7)
-            .expect(400)
+            .expect(404)
+    })
+
+    it('Fails if user is forbidden', async () => {
+        await request(app)
+            .post('/jobs/6/pay')
+            .set('profile_id', 6)
+            .expect(403)
     })
 
     it('Fails if job already paid', async () => {
@@ -160,11 +316,20 @@ describe('Pay for a job', () => {
 describe('Deposit to balance', () => {
     beforeEach(async () => await seed())
 
-    it('Fails if user is not self', async () => {
+    it('Fails if user is forbidden', async () => {
         await request(app)
             .post('/balances/deposit/6')
-            .set('profile_id', 10)
-            .expect(401)
+            .set('profile_id', 4)
+            .send({ amount: 100000 })
+            .expect(403)
+    })
+
+    it('Fails if missing amount', async () => {
+        await request(app)
+            .post('/balances/deposit/2')
+            .set('profile_id', 2)
+            .send({ amount: 'invalid' })
+            .expect(400)
     })
 
     it('Fails if deposit > 25% payments due', async () => {

@@ -25,6 +25,19 @@ class ForbiddenError extends Error {
     }
 }
 
+/**
+ * Tests if passed input is a string in format YYYY-MM-DD
+ * @param {any} date 
+ */
+ function isValidDate(date) {
+    const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/
+    if (!date) return false
+    if (typeof date != 'string') return false
+    if (date.length != 10) return false
+    if (!dateRegex.test(date)) return false
+    return true
+}
+
 app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
     const { Contract } = req.app.get('models')
     const { id } = req.params
@@ -92,11 +105,10 @@ app.get('/jobs/unpaid', getProfile, asyncHandler(async (req, res) => {
 app.get('/admin/best-profession', asyncHandler(async (req, res) => {
     const { start, end } = req.query
 
-    const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/
-    if (start && !dateRegex.test(start)) {
+    if (start && !isValidDate(start)) {
         throw new UserError('Start is not a valid date')
     }
-    if (end && !dateRegex.test(end)) {
+    if (end && !isValidDate(end)) {
         throw new UserError('End is not a valid date')
     }
 
@@ -109,14 +121,13 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ContractorId
         WHERE paid = 1 
-        ${start && `AND paymentDate >= ?`} 
-        ${end && `AND paymentDate < ?`}
+        ${start ? `AND paymentDate >= '${start}'` : ''} 
+        ${end ? `AND paymentDate < '${end}'` : ''}
         GROUP BY profession
-        ORDER BY SUM(price) DESC
+        ORDER BY SUM(price) DESC, ContractorId DESC
         LIMIT 1
     `,
         {
-            replacements: [start, end],
             raw: true,
             plain: true
         }
@@ -129,11 +140,10 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
     const { start, end } = req.query
     const limit = parseInt(req.query.limit) || 2
 
-    const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/
-    if (start && !dateRegex.test(start)) {
+    if (start && !isValidDate(start)) {
         throw new UserError('Start is not a valid date')
     }
-    if (end && !dateRegex.test(end)) {
+    if (end && !isValidDate(end)) {
         throw new UserError('End is not a valid date')
     }
 
@@ -142,14 +152,14 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ClientId
         WHERE paid = 1 
-        ${start && `AND paymentDate >= ?`} 
-        ${end && `AND paymentDate < ?`}
+        ${start ? `AND paymentDate >= '${start}'` : ''} 
+        ${end ? `AND paymentDate < '${end}'` : ''}
         GROUP BY ClientId
-        ORDER BY SUM(price) DESC
+        ORDER BY SUM(price) DESC, ClientId DESC
         LIMIT ?
     `,
         {
-            replacements: [start, end, limit],
+            replacements: [limit],
             raw: true,
         }
     )
@@ -188,7 +198,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
     )
 
     if (!jobContractorAndClient) {
-        throw new UserError('Job with id ' + jobId + ' not found')
+        throw new UserError('Job with id ' + jobId + ' not found', 404)
     }
 
     const contractor = jobContractorAndClient.Contract.Contractor
