@@ -1,6 +1,5 @@
 const request = require('supertest');
 const app = require('./src/app')
-const { sequelize } = require('./src/model')
 const { seed } = require('./scripts/seedDb')
 
 beforeAll(async () => {
@@ -28,11 +27,11 @@ it('Gets contracts per id when user owns it', async () => {
     )
 });
 
-it('Throws 401 in Get contracts per id when user does not own it', async () => {
+it('Throws 403 in Get contracts per id when user does not own it', async () => {
     return request(app)
         .get('/contracts/1')
         .set('profile_id', 3)
-        .expect(401)
+        .expect(403)
 });
 
 it('Gets contracts', async () => {

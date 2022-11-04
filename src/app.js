@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const asyncHandler = require('express-async-handler')
-const { sequelize, Profile } = require('./model')
+const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
 const app = express();
 
@@ -12,26 +12,31 @@ app.set('models', sequelize.models)
 const { Op } = require('sequelize')
 
 class UserError extends Error {
-    constructor(message, status = 400) {
+    constructor(message = 'User error', status = 400) {
         super(message)
         this.status = status
     }
 }
 
-/**
- * FIX ME!
- * @returns contract by id
- */
+class ForbiddenError extends Error {
+    constructor(message = 'Forbidden', status = 403) {
+        super(message)
+        this.status = status
+    }
+}
+
 app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
     const { Contract } = req.app.get('models')
     const { id } = req.params
 
     const contract = await Contract.findOne({ where: { id } })
 
-    if (!contract) return res.status(404).end()
+    if (!contract) {
+        throw new UserError('Contract not found', 404)
+    }
 
     if (!(req.profile.id == contract.ClientId || req.profile.id == contract.ContractorId)) {
-        return res.status(401).end()
+        throw new ForbiddenError('User can\' access this contract')
     }
 
     res.json(contract)
@@ -53,7 +58,6 @@ app.get('/contracts', getProfile, asyncHandler(async (req, res) => {
                 }
             }
         }
-
     )
 
     res.json(contracts)
@@ -105,13 +109,14 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ContractorId
         WHERE paid = 1 
-        ${start && `AND paymentDate >= '${start}'`} 
-        ${end && `AND paymentDate < '${end}'`}
+        ${start && `AND paymentDate >= ?`} 
+        ${end && `AND paymentDate < ?`}
         GROUP BY profession
         ORDER BY SUM(price) DESC
         LIMIT 1
     `,
         {
+            replacements: [start, end],
             raw: true,
             plain: true
         }
@@ -122,7 +127,7 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
 
 app.get('/admin/best-clients', asyncHandler(async (req, res) => {
     const { start, end } = req.query
-    const limit = parseInt(req.query.limit) ?? 2
+    const limit = parseInt(req.query.limit) || 2
 
     const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/
     if (start && !dateRegex.test(start)) {
@@ -137,13 +142,14 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ClientId
         WHERE paid = 1 
-        ${start && `AND paymentDate >= '${start}'`} 
-        ${end && `AND paymentDate < '${end}'`}
+        ${start && `AND paymentDate >= ?`} 
+        ${end && `AND paymentDate < ?`}
         GROUP BY ClientId
         ORDER BY SUM(price) DESC
-        LIMIT ${limit}
+        LIMIT ?
     `,
         {
+            replacements: [start, end, limit],
             raw: true,
         }
     )
@@ -190,7 +196,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
     const price = jobContractorAndClient.price
 
     if (contractor.id != userId) {
-        throw new UserError('Unauthorized to access job with id', 403)
+        throw new ForbiddenError('User forbidden to access job with id ' + jobId)
     }
 
     if (jobContractorAndClient.paid == true) {
@@ -201,40 +207,63 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
         throw new UserError('Insufficient funds to pay for job')
     }
 
-    await Job.update(
-        {
-            paid: 1,
-            paymentDate: new Date()
-        },
-        {
-            where: {
-                id: jobId
+    // If any of these steps fails we want to rollback everything
+    // so wrap it in a transaction
+    await sequelize.transaction(async (t) => {
+        await Job.update(
+            {
+                paid: 1,
+                paymentDate: new Date()
+            },
+            {
+                where: {
+                    id: jobId
+                }
+            },
+            {
+                transaction: t
             }
-        });
+        );
 
-    await Profile.update({ balance: contractor.balance + price }, {
-        where: {
-            id: contractor.id
-        }
-    });
+        await Profile.update(
+            {
+                balance: contractor.balance + price
+            },
+            {
+                where: {
+                    id: contractor.id
+                }
+            },
+            {
+                transaction: t
+            }
+        );
 
-    await Profile.update({ balance: client.balance - price }, {
-        where: {
-            id: client.id
-        }
+        await Profile.update(
+            {
+                balance: client.balance - price
+            },
+            {
+                where: {
+                    id: client.id
+                }
+            },
+            {
+                transaction: t
+            }
+        );
     });
 
     res.sendStatus(200)
 }))
 
-
 app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) => {
-    const { Job, Contract, Profile } = req.app.get('models')
+    const { Profile } = req.app.get('models')
     const userId = req.profile.id
     const amount = req.body.amount
 
     if (userId != req.params.userId) {
-        throw new UserError('Unauthorized', 403)
+        throw new ForbiddenError('User can only deposit in his own balance')
     }
 
     if (!amount || typeof amount !== 'number') {
@@ -245,10 +274,11 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
         SELECT SUM(price) as sum FROM Profiles 
         INNER JOIN Contracts ON Contracts.ClientId = Profiles.id
         INNER JOIN Jobs ON Contracts.id = Jobs.ContractId
-        WHERE Profiles.id = ${userId}
-        AND paid is null
+        WHERE Profiles.id = ?
+        AND paid IS NULL
     `,
         {
+            replacements: [userId],
             raw: true,
             plain: true
         }
@@ -272,7 +302,7 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
     res.sendStatus(200)
 }))
 
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
     console.error(err.message)
     res.status(err.status).json({ error: err.message }).end()
 })
