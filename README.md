@@ -1,11 +1,19 @@
 # DEEL BACKEND TASK
 
-  
+# Challenge
 
 💫 Welcome! 🎉
 
 
 This backend exercise involves building a Node.js/Express.js app that will serve a REST API. We imagine you should spend around 3 hours at implement this feature.
+
+# What I did
+
+This task asks to fix one endpoint and create new ones using Express and Sequelize using a Sqlite DB.
+
+I also setup and created integration tests using Jest and Supertest, and developed the TDD way.
+
+To run the tests: `npm test`
 
 ## Data Models
 
