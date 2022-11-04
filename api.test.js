@@ -1,20 +1,31 @@
 const request = require('supertest');
 const app = require('./src/app')
+const { sequelize } = require('./src/model')
+const { seed } = require('./scripts/seedDb')
+
+beforeAll(async () => {
+    await seed()
+})
+
+afterAll(async () => {
+    await seed()
+})
 
 it('Gets contracts per id when user owns it', async () => {
-    return request(app)
+    const res = await request(app)
         .get('/contracts/1')
         .set('profile_id', 1)
         .expect(200)
-        .expect({
+
+    expect(res.body).toMatchObject(
+        {
             id: 1,
             terms: 'bla bla bla',
             status: 'terminated',
-            createdAt: '2022-11-03T12:15:55.730Z',
-            updatedAt: '2022-11-03T12:15:55.730Z',
             ContractorId: 5,
             ClientId: 1
-        })
+        }
+    )
 });
 
 it('Throws 401 in Get contracts per id when user does not own it', async () => {
@@ -25,19 +36,19 @@ it('Throws 401 in Get contracts per id when user does not own it', async () => {
 });
 
 it('Gets contracts', async () => {
-    return request(app)
+    const res = await request(app)
         .get('/contracts')
         .set('profile_id', 1)
         .expect(200)
-        .expect([{
-            id: 2,
-            terms: 'bla bla bla',
-            status: 'in_progress',
-            createdAt: '2022-11-03T12:15:55.730Z',
-            updatedAt: '2022-11-03T12:15:55.730Z',
-            ContractorId: 6,
-            ClientId: 1
-        }])
+
+    expect(res.body).toHaveLength(1)
+    expect(res.body[0]).toMatchObject({
+        id: 2,
+        terms: 'bla bla bla',
+        status: 'in_progress',
+        ContractorId: 6,
+        ClientId: 1
+    })
 });
 
 it('Gets unpaid jobs', async () => {
@@ -85,3 +96,103 @@ it('Gets best clients', async () => {
             },
         ])
 });
+
+describe('Pay for a job', () => {
+    beforeEach(async () => await seed())
+
+    it('Fails if job not found', async () => {
+        await request(app)
+            .post('/jobs/60/pay')
+            .set('profile_id', 7)
+            .expect(400)
+    })
+
+    it('Fails if job already paid', async () => {
+        await request(app)
+            .post('/jobs/6/pay')
+            .set('profile_id', 7)
+            .expect(400)
+    })
+
+    it('Fails if clients\' balance < the amount to pay', async () => {
+        return request(app)
+            .post('/jobs/6/pay')
+            .set('profile_id', 6)
+            .expect(403)
+    })
+
+    it('Sets job to paid and moves money from the clients\'s balance to the contractor\'s balance', async () => {
+        const { Job, Contract, Profile } = app.get('models')
+
+        await request(app)
+            .post('/jobs/2/pay')
+            .set('profile_id', 6)
+            .expect(200)
+
+        const jobId = 2
+        const jobContractorAndClient = await Job.findOne(
+            {
+                where: {
+                    id: jobId
+                },
+                include: {
+                    model: Contract,
+                    include: [
+                        {
+                            model: Profile,
+                            as: 'Contractor'
+                        },
+                        {
+                            model: Profile,
+                            as: 'Client'
+                        }
+                    ]
+                }
+            }
+        )
+
+        expect(jobContractorAndClient.paid).toEqual(true)
+        expect(jobContractorAndClient.paymentDate).toBeDefined()
+        expect(jobContractorAndClient.Contract.Client.balance).toEqual(1150 - 201)
+        expect(jobContractorAndClient.Contract.Contractor.balance).toEqual(1214 + 201)
+    })
+})
+
+describe('Deposit to balance', () => {
+    beforeEach(async () => await seed())
+
+    it('Fails if user is not self', async () => {
+        await request(app)
+            .post('/balances/deposit/6')
+            .set('profile_id', 10)
+            .expect(401)
+    })
+
+    it('Fails if deposit > 25% payments due', async () => {
+        await request(app)
+            .post('/balances/deposit/2')
+            .set('profile_id', 2)
+            .send({ amount: 100000 })
+            .expect(400)
+    })
+
+    it('Deposits and adds to balance', async () => {
+        const { Profile } = app.get('models')
+
+        await request(app)
+            .post('/balances/deposit/2')
+            .set('profile_id', 2)
+            .send({ amount: 50 })
+            .expect(200)
+
+        const user = await Profile.findOne(
+            {
+                where: {
+                    id: 2
+                }
+            }
+        )
+
+        expect(Math.floor(user.balance)).toBe(231 + 50)
+    })
+})
