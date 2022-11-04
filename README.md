@@ -1,7 +1,5 @@
 # DEEL BACKEND TASK
 
-# Challenge
-
 💫 Welcome! 🎉
 
 
@@ -14,6 +12,8 @@ This task asks to fix one endpoint and create new ones using Express and Sequeli
 I also setup and created integration tests using Jest and Supertest, and developed the TDD way.
 
 To run the tests: `npm test`
+
+# Challenge
 
 ## Data Models
 
