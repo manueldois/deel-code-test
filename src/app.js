@@ -1,15 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const asyncHandler = require('express-async-handler')
+const { Op } = require('sequelize')
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
+
 const app = express();
 
 app.use(bodyParser.json());
 app.set('sequelize', sequelize)
 app.set('models', sequelize.models)
-
-const { Op } = require('sequelize')
 
 class UserError extends Error {
     constructor(message = 'User error', status = 400) {
@@ -29,7 +29,7 @@ class ForbiddenError extends Error {
  * Tests if passed input is a string in format YYYY-MM-DD
  * @param {any} date 
  */
- function isValidDate(date) {
+function isValidDate(date) {
     const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/
     if (!date) return false
     if (typeof date != 'string') return false
@@ -49,7 +49,7 @@ app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
     }
 
     if (!(req.profile.id == contract.ClientId || req.profile.id == contract.ContractorId)) {
-        throw new ForbiddenError('User can\' access this contract')
+        throw new ForbiddenError('User can\'t access this contract')
     }
 
     res.json(contract)
@@ -117,7 +117,8 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
     // so I'll stick to raw sql
 
     const bestPayingProfession = await sequelize.query(`
-        SELECT SUM(price) as sum, profession from Jobs
+        SELECT SUM(price) as sum, profession 
+        FROM Jobs
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ContractorId
         WHERE paid = 1 
@@ -148,7 +149,8 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
     }
 
     const [bestPayingClients] = await sequelize.query(`
-        SELECT SUM(price) as sum, ClientId, firstName, lastName from Jobs
+        SELECT SUM(price) as paid, ClientId, firstName || ' ' || lastName as fullName
+        FROM Jobs
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ClientId
         WHERE paid = 1 

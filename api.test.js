@@ -128,18 +128,16 @@ describe('Gets best clients', () => {
 
         expect(res.body).toContainEqual(
             {
-                sum: 2020,
+                paid: 2020,
                 ClientId: 4,
-                firstName: "Ash",
-                lastName: "Kethcum",
+                fullName: "Ash Kethcum",
             }
         )
         expect(res.body).toContainEqual(
             {
-                sum: 421,
+                paid: 421,
                 ClientId: 1,
-                firstName: "Harry",
-                lastName: "Potter",
+                fullName: "Harry Potter",
             }
         )
     })
@@ -151,18 +149,16 @@ describe('Gets best clients', () => {
 
         expect(res.body).toContainEqual(
             {
-                sum: 21,
+                paid: 21,
                 ClientId: 1,
-                firstName: "Harry",
-                lastName: "Potter",
+                fullName: "Harry Potter",
             }
         )
         expect(res.body).toContainEqual(
             {
-                sum: 121,
+                paid: 121,
                 ClientId: 2,
-                firstName: "Mr",
-                lastName: "Robot",
+                fullName: "Mr Robot",
             }
         )
     })
@@ -173,12 +169,10 @@ describe('Gets best clients', () => {
             .expect(200)
 
         expect(res.body).toContainEqual(
-
             {
-                sum: 121,
+                paid: 121,
                 ClientId: 2,
-                firstName: "Mr",
-                lastName: "Robot",
+                fullName: "Mr Robot",
             },
         )
     })
@@ -190,18 +184,16 @@ describe('Gets best clients', () => {
 
         expect(res.body).toContainEqual(
             {
-                sum: 2020,
+                paid: 2020,
                 ClientId: 4,
-                firstName: "Ash",
-                lastName: "Kethcum",
+                fullName: "Ash Kethcum",
             }
         )
         expect(res.body).toContainEqual(
             {
-                sum: 442,
+                paid: 442,
                 ClientId: 2,
-                firstName: "Mr",
-                lastName: "Robot",
+                fullName: "Mr Robot",
             }
         )
     })
@@ -220,26 +212,23 @@ describe('Gets best clients', () => {
 
         expect(res.body).toContainEqual(
             {
-                sum: 2020,
+                paid: 2020,
                 ClientId: 4,
-                firstName: "Ash",
-                lastName: "Kethcum",
+                fullName: "Ash Kethcum",
             }
         )
         expect(res.body).toContainEqual(
             {
-                sum: 442,
+                paid: 442,
                 ClientId: 2,
-                firstName: "Mr",
-                lastName: "Robot",
+                fullName: "Mr Robot",
             }
         )
         expect(res.body).toContainEqual(
             {
-                sum: 442,
+                paid: 442,
                 ClientId: 1,
-                firstName: "Harry",
-                lastName: "Potter",
+                fullName: "Harry Potter",
             }
         )
     })
