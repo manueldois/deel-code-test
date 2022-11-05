@@ -222,42 +222,44 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
     // If any of these steps fails we want to rollback everything
     // so wrap it in a transaction
     await sequelize.transaction(async (t) => {
-        await Job.update(
-            {
-                paid: 1,
-                paymentDate: new Date()
-            },
-            {
-                where: {
-                    id: jobId
-                },
-                transaction: t
-            }
-        );
-
-        await Profile.update(
-            {
-                balance: contractor.balance + price
-            },
-            {
-                where: {
-                    id: contractor.id
-                },
-                transaction: t
-            }
-        );
-
-        await Profile.update(
-            {
-                balance: client.balance - price
-            },
-            {
-                where: {
-                    id: client.id
-                },
-                transaction: t
-            }
-        );
+        await Promise.all(
+            [
+                Job.update(
+                    {
+                        paid: 1,
+                        paymentDate: new Date()
+                    },
+                    {
+                        where: {
+                            id: jobId
+                        },
+                        transaction: t
+                    }
+                ),
+                Profile.update(
+                    {
+                        balance: contractor.balance + price
+                    },
+                    {
+                        where: {
+                            id: contractor.id
+                        },
+                        transaction: t
+                    }
+                ),
+                Profile.update(
+                    {
+                        balance: client.balance - price
+                    },
+                    {
+                        where: {
+                            id: client.id
+                        },
+                        transaction: t
+                    }
+                )
+            ]
+        )
     });
 
     res.sendStatus(200)
