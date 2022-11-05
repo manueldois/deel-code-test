@@ -230,9 +230,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
             {
                 where: {
                     id: jobId
-                }
-            },
-            {
+                },
                 transaction: t
             }
         );
@@ -244,9 +242,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
             {
                 where: {
                     id: contractor.id
-                }
-            },
-            {
+                },
                 transaction: t
             }
         );
@@ -258,9 +254,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
             {
                 where: {
                     id: client.id
-                }
-            },
-            {
+                },
                 transaction: t
             }
         );
