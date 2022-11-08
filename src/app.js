@@ -112,23 +112,20 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
         throw new UserError('End is not a valid date')
     }
 
-    // Using sequelize would be safer, but I am not familiar with it
-    // enough to do this complex query,
-    // so I'll stick to raw sql
-
     const bestPayingProfession = await sequelize.query(`
         SELECT SUM(price) as sum, profession 
         FROM Jobs
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ContractorId
         WHERE paid = 1 
-        ${start ? `AND paymentDate >= '${start}'` : ''} 
-        ${end ? `AND paymentDate < '${end}'` : ''}
+        ${start ? `AND paymentDate >= :start` : ''} 
+        ${end ? `AND paymentDate < :end` : ''}
         GROUP BY profession
         ORDER BY SUM(price) DESC, ContractorId DESC
         LIMIT 1
     `,
         {
+            replacements: { start, end },
             raw: true,
             plain: true
         }
@@ -154,14 +151,14 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
         INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
         INNER JOIN Profiles ON Profiles.id = Contracts.ClientId
         WHERE paid = 1 
-        ${start ? `AND paymentDate >= '${start}'` : ''} 
-        ${end ? `AND paymentDate < '${end}'` : ''}
+        ${start ? `AND paymentDate >= :start` : ''} 
+        ${end ? `AND paymentDate < :end` : ''}
         GROUP BY ClientId
         ORDER BY SUM(price) DESC, ClientId DESC
-        LIMIT ?
+        LIMIT :limit
     `,
         {
-            replacements: [limit],
+            replacements: { start, end, limit },
             raw: true,
         }
     )
