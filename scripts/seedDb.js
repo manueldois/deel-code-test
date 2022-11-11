@@ -233,6 +233,8 @@ async function seed() {
     }),
 
   ]);
+
+  console.log('Done seeding DB')
 }
 
 module.exports = { seed }
