@@ -2,6 +2,23 @@
     "version": "1.0.0",
     "configurations": [
         {
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "name": "nodemon",
+            "program": "${workspaceFolder}/src/server.js",
+            "request": "launch",
+            "restart": true,
+            "runtimeExecutable": "nodemon",
+            "args": [
+                "--inspect"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        
+        {
             "type": "node",
             "request": "launch",
             "name": "Jest: current file",

@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const asyncHandler = require('express-async-handler')
 const { Op } = require('sequelize')
-const { sequelize } = require('./model')
+const { sequelize, Job, Contract, Profile } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
 
 const app = express();
@@ -105,6 +105,7 @@ app.get('/jobs/unpaid', getProfile, asyncHandler(async (req, res) => {
 app.get('/admin/best-profession', asyncHandler(async (req, res) => {
     const { start, end } = req.query
 
+    // I assumed that a date is only date, and not also time
     if (start && !isValidDate(start)) {
         throw new UserError('Start is not a valid date')
     }
@@ -112,26 +113,60 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
         throw new UserError('End is not a valid date')
     }
 
-    const bestPayingProfession = await sequelize.query(`
-        SELECT SUM(price) as sum, profession 
-        FROM Jobs
-        INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
-        INNER JOIN Profiles ON Profiles.id = Contracts.ContractorId
-        WHERE paid = 1 
-        ${start ? `AND paymentDate >= :start` : ''} 
-        ${end ? `AND paymentDate < :end` : ''}
-        GROUP BY profession
-        ORDER BY SUM(price) DESC, ContractorId DESC
-        LIMIT 1
-    `,
+    // When passed '2020-08-15', sequelize was converting it to '2020-08-14 23:00:00.000 +00:00'
+    // No idea why. Let's set time to 00:00:00Z
+    const where = {
+        paid: 1
+    }
+
+    if (start || end) {
+        where.paymentDate = {}
+
+        if (start) {
+            where.paymentDate[Op.gte] = new Date(start).toISOString()
+        }
+
+        if (end) {
+            where.paymentDate[Op.lt] = new Date(end).toISOString()
+        }
+    }
+
+    const bestPayingProfession = await Job.findAll(
         {
-            replacements: { start, end },
+            attributes: [
+                [sequelize.fn('sum', sequelize.col('price')), 'sum'],
+                [sequelize.col('Contract.Contractor.profession'), 'profession']
+            ],
+            where,
+            include: {
+                model: Contract,
+                attributes: [
+                    'ContractorId'
+                ],
+                include: {
+                    model: Profile,
+                    as: 'Contractor',
+                    attributes: [
+                        'profession'
+                    ],
+                }
+            },
+            group: 'Contract.Contractor.profession',
+            order: [
+                [sequelize.fn('sum', sequelize.col('price')), 'DESC']
+            ],
+            limit: 1,
+            plain: true,
             raw: true,
-            plain: true
         }
     )
 
-    res.json(bestPayingProfession)
+    const response = {
+        sum: bestPayingProfession.sum,
+        profession: bestPayingProfession.profession
+    }
+
+    res.json(response)
 }))
 
 app.get('/admin/best-clients', asyncHandler(async (req, res) => {
@@ -145,25 +180,65 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
         throw new UserError('End is not a valid date')
     }
 
-    const [bestPayingClients] = await sequelize.query(`
-        SELECT SUM(price) as paid, ClientId, firstName || ' ' || lastName as fullName
-        FROM Jobs
-        INNER JOIN Contracts ON Contracts.id = Jobs.ContractId
-        INNER JOIN Profiles ON Profiles.id = Contracts.ClientId
-        WHERE paid = 1 
-        ${start ? `AND paymentDate >= :start` : ''} 
-        ${end ? `AND paymentDate < :end` : ''}
-        GROUP BY ClientId
-        ORDER BY SUM(price) DESC, ClientId DESC
-        LIMIT :limit
-    `,
+    const where = {
+        paid: 1
+    }
+
+    if (start || end) {
+        where.paymentDate = {}
+
+        if (start) {
+            where.paymentDate[Op.gte] = new Date(start).toISOString()
+        }
+
+        if (end) {
+            where.paymentDate[Op.lt] = new Date(end).toISOString()
+        }
+    }
+
+    const bestPayingClients = await Job.findAll(
         {
-            replacements: { start, end, limit },
+            attributes: [
+                [sequelize.fn('sum', sequelize.col('price')), 'paid'],
+                // Apparently, sqlite does not support CONCAT, only the || operator,
+                // But sequelize queries for CONCAT, which errors
+                // Just add them in JS
+                // [sequelize.fn('concat', sequelize.col('firstName'), ' ', sequelize.col('lastName')), 'fullName'],
+            ],
+            where,
+            include: {
+                model: Contract,
+                attributes: [
+                    'ClientId'
+                ],
+                include: {
+                    model: Profile,
+                    as: 'Client',
+                    attributes: [
+                        'firstName',
+                        'lastName'
+                    ],
+                }
+            },
+            group: 'Contract.ClientId',
+            order: [
+                [sequelize.fn('sum', sequelize.col('price')), 'DESC'],
+                [sequelize.col('Contract.ClientId'), 'DESC']
+            ],
+            limit,
             raw: true,
         }
     )
 
-    res.json(bestPayingClients)
+    const response = bestPayingClients.map(
+        c => ({
+            paid: c.paid,
+            ClientId: c['Contract.ClientId'],
+            fullName: c['Contract.Client.firstName'] + ' ' + c['Contract.Client.lastName']
+        })
+    )
+
+    res.json(response)
 }))
 
 app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
