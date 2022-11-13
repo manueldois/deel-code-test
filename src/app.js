@@ -85,10 +85,11 @@ app.get('/jobs/unpaid', getProfile, asyncHandler(async (req, res) => {
             where: {
                 paid: {
                     [Op.not]: true
-                }
+                },
             },
             include: {
                 model: Contract,
+                attributes: [],
                 where: {
                     [Op.or]: {
                         ClientId: userId,
@@ -140,15 +141,11 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
             where,
             include: {
                 model: Contract,
-                attributes: [
-                    'ContractorId'
-                ],
+                attributes: [],
                 include: {
                     model: Profile,
                     as: 'Contractor',
-                    attributes: [
-                        'profession'
-                    ],
+                    attributes: [],
                 }
             },
             group: 'Contract.Contractor.profession',
@@ -161,12 +158,7 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
         }
     )
 
-    const response = {
-        sum: bestPayingProfession.sum,
-        profession: bestPayingProfession.profession
-    }
-
-    res.json(response)
+    res.json(bestPayingProfession)
 }))
 
 app.get('/admin/best-clients', asyncHandler(async (req, res) => {
@@ -208,22 +200,25 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
             where,
             include: {
                 model: Contract,
-                attributes: [
-                    'ClientId'
-                ],
+                attributes: [],
                 include: {
                     model: Profile,
                     as: 'Client',
                     attributes: [
+                        'id',
                         'firstName',
                         'lastName'
                     ],
                 }
             },
-            group: 'Contract.ClientId',
+            group: [
+                'Contract.Client.id',
+                'Contract.Client.firstName',
+                'Contract.Client.lastName',
+            ],
             order: [
                 [sequelize.fn('sum', sequelize.col('price')), 'DESC'],
-                [sequelize.col('Contract.ClientId'), 'DESC']
+                [sequelize.col('Contract.Client.id'), 'DESC']
             ],
             limit,
             raw: true,
@@ -233,7 +228,7 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
     const response = bestPayingClients.map(
         c => ({
             paid: c.paid,
-            ClientId: c['Contract.ClientId'],
+            ClientId: c['Contract.Client.id'],
             fullName: c['Contract.Client.firstName'] + ' ' + c['Contract.Client.lastName']
         })
     )
@@ -250,40 +245,57 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
         throw new UserError('Missing JobId')
     }
 
-    const jobContractorAndClient = await Job.findOne(
+    const job = await Job.findOne(
         {
+            attributes: [
+                'paid',
+                'price',
+                'id',
+            ],
             where: {
                 id: jobId
             },
             include: {
                 model: Contract,
+                attributes: [
+                    'ContractorId',
+                    'ClientId',
+                ],
                 include: [
                     {
                         model: Profile,
-                        as: 'Contractor'
+                        as: 'Contractor',
+                        attributes: [
+                            'id',
+                            'balance'
+                        ]
                     },
                     {
                         model: Profile,
-                        as: 'Client'
+                        as: 'Client',
+                        attributes: [
+                            'id',
+                            'balance'
+                        ]
                     }
                 ]
             }
         }
     )
 
-    if (!jobContractorAndClient) {
+    if (!job) {
         throw new UserError('Job with id ' + jobId + ' not found', 404)
     }
 
-    const contractor = jobContractorAndClient.Contract.Contractor
-    const client = jobContractorAndClient.Contract.Client
-    const price = jobContractorAndClient.price
+    const contractor = job.Contract.Contractor
+    const client = job.Contract.Client
+    const price = job.price
 
     if (contractor.id != userId) {
         throw new ForbiddenError('User forbidden to access job with id ' + jobId)
     }
 
-    if (jobContractorAndClient.paid == true) {
+    if (job.paid == true) {
         throw new UserError('Job already paid for')
     }
 
@@ -296,37 +308,28 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
     await sequelize.transaction(async (t) => {
         await Promise.all(
             [
-                Job.update(
+                job.update(
                     {
-                        paid: 1,
-                        paymentDate: new Date()
+                        paid: true,
+                        paymentDate: new Date(),
                     },
                     {
-                        where: {
-                            id: jobId
-                        },
                         transaction: t
                     }
                 ),
-                Profile.update(
+                contractor.update(
                     {
                         balance: contractor.balance + price
                     },
                     {
-                        where: {
-                            id: contractor.id
-                        },
                         transaction: t
                     }
                 ),
-                Profile.update(
+                client.update(
                     {
                         balance: client.balance - price
                     },
                     {
-                        where: {
-                            id: client.id
-                        },
                         transaction: t
                     }
                 )
@@ -350,17 +353,22 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
         throw new UserError('Missing amount')
     }
 
-    const sumPaymentsDue = await sequelize.query(`
-        SELECT SUM(price) as sum FROM Profiles 
-        INNER JOIN Contracts ON Contracts.ClientId = Profiles.id
-        INNER JOIN Jobs ON Contracts.id = Jobs.ContractId
-        WHERE Profiles.id = ?
-        AND paid IS NULL
-    `,
+    const sumPaymentsDue = await Job.findOne(
         {
-            replacements: [userId],
-            raw: true,
-            plain: true
+            attributes: [
+                [sequelize.fn('sum', sequelize.col('price')), 'sum'],
+            ],
+            where: {
+                paid: null,
+            },
+            include: {
+                model: Contract,
+                attributes: [],
+                where: {
+                    ClientId: userId
+                },
+            },
+            raw: true
         }
     )
 
@@ -384,7 +392,7 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
 
 app.use((err, req, res) => {
     console.error(err.message)
-    res.status(err.status).json({ error: err.message }).end()
+    res.json({ error: err.message })
 })
 
 module.exports = app;
