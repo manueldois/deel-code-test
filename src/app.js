@@ -390,9 +390,17 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
     res.sendStatus(200)
 }))
 
-app.use((err, req, res) => {
-    console.error(err.message)
-    res.json({ error: err.message })
+app.use((err, req, res, next) => {
+    // If it's an expected error, just send the message and end
+    if (err instanceof UserError || err instanceof ForbiddenError) {
+        res.status(err.status).json({ error: err.message })
+        next()
+        return
+    }
+
+    //  If internal server error, log it to console and send message
+    console.error("ERROR: ", err.message, err.stack)
+    res.status(500).json({ error: err.message })
 })
 
 module.exports = app;
