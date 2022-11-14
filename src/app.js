@@ -4,39 +4,14 @@ const asyncHandler = require('express-async-handler')
 const { Op } = require('sequelize')
 const { sequelize, Job, Contract, Profile } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
+const { isValidDate } = require('./util')
+const { UserError, ForbiddenError } = require('./errors')
 
 const app = express();
 
 app.use(bodyParser.json());
 app.set('sequelize', sequelize)
 app.set('models', sequelize.models)
-
-class UserError extends Error {
-    constructor(message = 'User error', status = 400) {
-        super(message)
-        this.status = status
-    }
-}
-
-class ForbiddenError extends Error {
-    constructor(message = 'Forbidden', status = 403) {
-        super(message)
-        this.status = status
-    }
-}
-
-/**
- * Tests if passed input is a string in format YYYY-MM-DD
- * @param {any} date 
- */
-function isValidDate(date) {
-    const dateRegex = /^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/
-    if (!date) return false
-    if (typeof date != 'string') return false
-    if (date.length != 10) return false
-    if (!dateRegex.test(date)) return false
-    return true
-}
 
 app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
     const { Contract } = req.app.get('models')
