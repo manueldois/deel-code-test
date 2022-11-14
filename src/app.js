@@ -10,11 +10,8 @@ const { UserError, ForbiddenError } = require('./errors')
 const app = express();
 
 app.use(bodyParser.json());
-app.set('sequelize', sequelize)
-app.set('models', sequelize.models)
 
 app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
-    const { Contract } = req.app.get('models')
     const { id } = req.params
 
     const contract = await Contract.findOne({ where: { id } })
@@ -32,7 +29,6 @@ app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
 }))
 
 app.get('/contracts', getProfile, asyncHandler(async (req, res) => {
-    const { Contract } = req.app.get('models')
     const userId = req.profile.id
 
     const contracts = await Contract.findAll(
@@ -53,12 +49,10 @@ app.get('/contracts', getProfile, asyncHandler(async (req, res) => {
 }))
 
 app.get('/jobs/unpaid', getProfile, asyncHandler(async (req, res) => {
-    const { Job, Contract } = req.app.get('models')
     const userId = req.profile.id
 
     const jobs = await Job.findAll(
         {
-            logging: console.log,
             where: {
                 paid: {
                     [Op.not]: true
@@ -215,7 +209,6 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
 }))
 
 app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
-    const { Job, Contract, Profile } = req.app.get('models')
     const userId = req.profile.id
     const jobId = parseInt(req.params.id)
 
@@ -320,7 +313,6 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
 }))
 
 app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) => {
-    const { Profile } = req.app.get('models')
     const userId = req.profile.id
     const amount = req.body.amount
 

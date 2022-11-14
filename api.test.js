@@ -1,5 +1,6 @@
 const request = require('supertest');
 const app = require('./src/app')
+const { Job, Contract, Profile } = require('./src/model')
 const { seed } = require('./scripts/seedDb')
 
 beforeAll(async () => {
@@ -266,8 +267,6 @@ describe('Pay for a job', () => {
     })
 
     it('Sets job to paid and moves money from the clients\'s balance to the contractor\'s balance', async () => {
-        const { Job, Contract, Profile } = app.get('models')
-
         await request(app)
             .post('/jobs/2/pay')
             .set('profile_id', 1)
@@ -352,8 +351,6 @@ describe('Deposit to balance', () => {
     })
 
     it('Deposits and adds to balance', async () => {
-        const { Profile } = app.get('models')
-
         await request(app)
             .post('/balances/deposit/2')
             .set('profile_id', 2)
