@@ -20,7 +20,8 @@ app.get('/contracts/:id', getProfile, asyncHandler(async (req, res) => {
     const contract = await Contract.findOne({ where: { id } })
 
     if (!contract) {
-        throw new UserError('Contract not found', 404)
+        // throw new UserError('Contract not found', 404)
+        throw new Error()
     }
 
     if (!(req.profile.id == contract.ClientId || req.profile.id == contract.ContractorId)) {

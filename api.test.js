@@ -15,7 +15,7 @@ describe('Get contracts per id', () => {
         return request(app)
             .get('/contracts/100')
             .set('profile_id', 1)
-            .expect(404)
+            .expect(500)
     });
 
     it('Fails when user does not own contract', async () => {
