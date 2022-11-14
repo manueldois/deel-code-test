@@ -330,6 +330,10 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
         throw new UserError('Missing amount')
     }
 
+    if (amount <= 0) {
+        throw new UserError('Amount must be positive')
+    }
+
     const sumPaymentsDue = await Job.findOne(
         {
             attributes: [

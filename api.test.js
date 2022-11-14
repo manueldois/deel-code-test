@@ -321,6 +321,14 @@ describe('Deposit to balance', () => {
             .expect(400)
     })
 
+    it('Fails if amount is negative', async () => {
+        await request(app)
+            .post('/balances/deposit/2')
+            .set('profile_id', 2)
+            .send({ amount: -1 })
+            .expect(400)
+    })
+
     it('Fails if deposit > 25% payments due', async () => {
         await request(app)
             .post('/balances/deposit/2')
