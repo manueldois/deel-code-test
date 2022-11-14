@@ -82,6 +82,7 @@ app.get('/jobs/unpaid', getProfile, asyncHandler(async (req, res) => {
 
     const jobs = await Job.findAll(
         {
+            logging: console.log,
             where: {
                 paid: {
                     [Op.not]: true
@@ -91,6 +92,7 @@ app.get('/jobs/unpaid', getProfile, asyncHandler(async (req, res) => {
                 model: Contract,
                 attributes: [],
                 where: {
+                    status: 'in_progress',
                     [Op.or]: {
                         ClientId: userId,
                         ContractorId: userId

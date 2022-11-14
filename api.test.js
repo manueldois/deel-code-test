@@ -65,7 +65,7 @@ it('Gets unpaid jobs', async () => {
         .set('profile_id', 1)
         .expect(200)
 
-    expect(res.body).toMatchObject([{ id: 1 }, { id: 2 }])
+    expect(res.body).toMatchObject([{ id: 2 }])
 });
 
 describe('Gets best profession', () => {
