@@ -268,7 +268,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
     const client = job.Contract.Client
     const price = job.price
 
-    if (contractor.id != userId) {
+    if (client.id != userId) {
         throw new ForbiddenError('User forbidden to access job with id ' + jobId)
     }
 
@@ -276,7 +276,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
         throw new UserError('Job already paid for')
     }
 
-    if (price > contractor.balance) {
+    if (price > client.balance) {
         throw new UserError('Insufficient funds to pay for job')
     }
 

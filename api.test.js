@@ -254,14 +254,14 @@ describe('Pay for a job', () => {
     it('Fails if job already paid', async () => {
         await request(app)
             .post('/jobs/6/pay')
-            .set('profile_id', 7)
+            .set('profile_id', 4)
             .expect(400)
     })
 
     it('Fails if clients\' balance < the amount to pay', async () => {
         return request(app)
-            .post('/jobs/6/pay')
-            .set('profile_id', 6)
+            .post('/jobs/7/pay')
+            .set('profile_id', 4)
             .expect(403)
     })
 
@@ -270,7 +270,7 @@ describe('Pay for a job', () => {
 
         await request(app)
             .post('/jobs/2/pay')
-            .set('profile_id', 6)
+            .set('profile_id', 1)
             .expect(200)
 
         const jobId = 2
