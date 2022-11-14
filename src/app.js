@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const asyncHandler = require('express-async-handler')
-const { Op } = require('sequelize')
+const { Op, OptimisticLockError } = require('sequelize')
 const { sequelize, Job, Contract, Profile } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
 const { isValidDate } = require('./util')
@@ -229,6 +229,7 @@ app.post('/jobs/:id/pay', getProfile, asyncHandler(async (req, res) => {
                 'paid',
                 'price',
                 'id',
+                'version',
             ],
             where: {
                 id: jobId
@@ -376,6 +377,13 @@ app.use((err, req, res, next) => {
     // If it's an expected error, just send the message and end
     if (err instanceof UserError || err instanceof ForbiddenError) {
         res.status(err.status).json({ error: err.message })
+        next()
+        return
+    }
+
+    // If resource is locked, send 412
+    if (err instanceof OptimisticLockError) {
+        res.status(412).json({ error: err.message })
         next()
         return
     }

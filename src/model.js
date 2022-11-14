@@ -72,7 +72,8 @@ Job.init(
   },
   {
     sequelize,
-    modelName: 'Job'
+    modelName: 'Job',
+    version: true
   }
 );
 

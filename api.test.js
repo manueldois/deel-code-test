@@ -6,9 +6,9 @@ beforeAll(async () => {
     await seed()
 })
 
-afterAll(async () => {
-    await seed()
-})
+// afterAll(async () => {
+//     await seed()
+// })
 
 describe('Get contracts per id', () => {
     it('Fails when contract not found', async () => {
@@ -299,6 +299,20 @@ describe('Pay for a job', () => {
         expect(jobContractorAndClient.paymentDate).toBeDefined()
         expect(jobContractorAndClient.Contract.Client.balance).toEqual(1150 - 201)
         expect(jobContractorAndClient.Contract.Contractor.balance).toEqual(1214 + 201)
+    })
+
+    it('No concurrency issues', async () => {
+        const req1 = request(app)
+            .post('/jobs/2/pay')
+            .set('profile_id', 1)
+            .expect(200)
+
+        const req2 = request(app)
+            .post('/jobs/2/pay')
+            .set('profile_id', 1)
+            .expect(412)
+
+        const [res1, res2] = await Promise.all([req1, req2])
     })
 })
 
