@@ -232,9 +232,11 @@ async function seed() {
       ContractId: 3,
     }),
 
-  ]);
+  ]).catch(err => console.error("\n\n\n ERROR: ", err));
 
   console.log('Done seeding DB')
+
+  // process.exit()
 }
 
 module.exports = { seed }
