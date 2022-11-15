@@ -89,12 +89,12 @@ Job.init(
   }
 );
 
-Profile.hasMany(Contract, { as: 'Contractor', foreignKey: 'ContractorId', constraints: false })
-Contract.belongsTo(Profile, { as: 'Contractor', constraints: false })
-Profile.hasMany(Contract, { as: 'Client', foreignKey: 'ClientId', constraints: false })
-Contract.belongsTo(Profile, { as: 'Client', constraints: false })
-Contract.hasMany(Job, { constraints: false })
-Job.belongsTo(Contract, { constraints: false })
+Profile.hasMany(Contract, { as: 'Contractor', foreignKey: 'ContractorId', })
+Contract.belongsTo(Profile, { as: 'Contractor'})
+Profile.hasMany(Contract, { as: 'Client', foreignKey: 'ClientId' })
+Contract.belongsTo(Profile, { as: 'Client' })
+Contract.hasMany(Job, )
+Job.belongsTo(Contract, )
 
 module.exports = {
   sequelize,
