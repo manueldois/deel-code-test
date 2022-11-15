@@ -1,12 +1,11 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler')
 const { sequelize, Job, Contract, Profile } = require('../../model')
-const { getProfile } = require('../../middleware/getProfile')
 const { ForbiddenError, UserError } = require('../../errors')
 
 const router = express.Router()
 
-router.post('/deposit/:userId', getProfile, asyncHandler(async (req, res) => {
+router.post('/deposit/:userId', asyncHandler(async (req, res) => {
     const userId = req.profile.id
     const amount = req.body.amount
 

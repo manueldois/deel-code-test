@@ -2,12 +2,11 @@ const express = require('express');
 const asyncHandler = require('express-async-handler')
 const { Op } = require('sequelize')
 const { sequelize, Job, Contract, Profile } = require('../../model')
-const { getProfile } = require('../../middleware/getProfile')
 const { UserError, ForbiddenError } = require('../../errors')
 
 const router = express.Router()
 
-router.get('/unpaid', getProfile, asyncHandler(async (req, res) => {
+router.get('/unpaid', asyncHandler(async (req, res) => {
     const userId = req.profile.id
 
     const jobs = await Job.findAll(
@@ -34,7 +33,7 @@ router.get('/unpaid', getProfile, asyncHandler(async (req, res) => {
     res.json(jobs)
 }))
 
-router.post('/:id/pay', getProfile, asyncHandler(async (req, res) => {
+router.post('/:id/pay', asyncHandler(async (req, res) => {
     const userId = req.profile.id
     const jobId = parseInt(req.params.id)
 
