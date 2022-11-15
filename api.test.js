@@ -12,6 +12,23 @@ afterAll(async () => {
 })
 
 describe('Get contracts per id', () => {
+    it('Fails when id is invalid', async () => {
+        await request(app)
+            .get('/contracts/a')
+            .set('profile_id', 1)
+            .expect(400)
+
+        await request(app)
+            .get('/contracts/-100')
+            .set('profile_id', 1)
+            .expect(400)
+
+        await request(app)
+            .get('/contracts/1.1')
+            .set('profile_id', 1)
+            .expect(400)
+    });
+
     it('Fails when contract not found', async () => {
         return request(app)
             .get('/contracts/100')
@@ -119,6 +136,12 @@ describe('Gets best profession', () => {
             .get('/admin/best-profession?start=2021-05-1')
             .expect(400)
     });
+
+    it('Fails if start is after end', async () => {
+        await request(app)
+            .get('/admin/best-profession?start=2021-02-01&end=2021-01-01')
+            .expect(400)
+    })
 })
 
 describe('Gets best clients', () => {
@@ -232,6 +255,40 @@ describe('Gets best clients', () => {
                 fullName: "Harry Potter",
             }
         )
+    })
+
+    it('Fails with invalid date', async () => {
+        await request(app)
+            .get('/admin/best-clients?start=2021-20-01')
+            .expect(400)
+
+        await request(app)
+            .get('/admin/best-clients?start=2021-05-1')
+            .expect(400)
+    });
+
+    it('Fails if start is after end', async () => {
+        await request(app)
+            .get('/admin/best-clients?start=2021-02-01&end=2021-01-01')
+            .expect(400)
+    })
+
+    it('Fails if invalid limit', async () => {
+        await request(app)
+            .get('/admin/best-clients?start=2021-02-01&limit=abc')
+            .expect(400)
+
+        await request(app)
+            .get('/admin/best-clients?start=2021-02-01&limit=0')
+            .expect(400)
+
+        await request(app)
+            .get('/admin/best-clients?start=2021-02-01&limit=-1')
+            .expect(400)
+
+        await request(app)
+            .get('/admin/best-clients?start=2021-02-01&limit=10.5')
+            .expect(400)
     })
 });
 

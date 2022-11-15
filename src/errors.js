@@ -1,3 +1,5 @@
+const { validationResult } = require('express-validator');
+
 class UserError extends Error {
     constructor(message = 'User error', status = 400) {
         super(message)
@@ -12,7 +14,16 @@ class ForbiddenError extends Error {
     }
 }
 
+function validationErrorHandler(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    next()
+}
+
 module.exports = {
     UserError,
     ForbiddenError,
+    validationErrorHandler,
 }

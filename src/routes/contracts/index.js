@@ -2,25 +2,30 @@ const express = require('express');
 const asyncHandler = require('express-async-handler')
 const { Op } = require('sequelize')
 const { Contract } = require('../../model')
-const { ForbiddenError, UserError } = require('../../errors')
+const { ForbiddenError, UserError, validationErrorHandler } = require('../../errors')
+const { param } = require('express-validator');
 
 const router = express.Router()
 
-router.get('/:id', asyncHandler(async (req, res) => {
-    const { id } = req.params
+router.get(
+    '/:id',
+    param('id').isInt({ min: 1 }).withMessage('Id must be int > 0'),
+    validationErrorHandler,
+    asyncHandler(async (req, res) => {
+        const { id } = req.params
 
-    const contract = await Contract.findOne({ where: { id } })
+        const contract = await Contract.findOne({ where: { id } })
 
-    if (!contract) {
-        throw new UserError('Contract not found', 404)
-    }
+        if (!contract) {
+            throw new UserError('Contract not found', 404)
+        }
 
-    if (!(req.profile.id == contract.ClientId || req.profile.id == contract.ContractorId)) {
-        throw new ForbiddenError('User can\'t access this contract')
-    }
+        if (!(req.profile.id == contract.ClientId || req.profile.id == contract.ContractorId)) {
+            throw new ForbiddenError('User can\'t access this contract')
+        }
 
-    res.json(contract)
-}))
+        res.json(contract)
+    }))
 
 router.get('', asyncHandler(async (req, res) => {
     const userId = req.profile.id
