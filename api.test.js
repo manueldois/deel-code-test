@@ -295,6 +295,23 @@ describe('Gets best clients', () => {
 describe('Pay for a job', () => {
     beforeEach(async () => await seed())
 
+    it('Fails if invalid id', async () => {
+        await request(app)
+            .post('/jobs/-1/pay')
+            .set('profile_id', 7)
+            .expect(400)
+
+        await request(app)
+            .post('/jobs/10.5/pay')
+            .set('profile_id', 7)
+            .expect(400)
+
+        await request(app)
+            .post('/jobs/abc/pay')
+            .set('profile_id', 7)
+            .expect(400)
+    })
+
     it('Fails if job not found', async () => {
         await request(app)
             .post('/jobs/60/pay')
