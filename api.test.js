@@ -379,8 +379,8 @@ describe('Deposit to balance', () => {
         await request(app)
             .post('/balances/deposit/6')
             .set('profile_id', 4)
-            .send({ amount: 100000 })
-            .expect(403)
+            .send({ amount: 10 })
+            .expect(400)
     })
 
     it('Fails if missing amount', async () => {
