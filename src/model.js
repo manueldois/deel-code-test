@@ -3,7 +3,10 @@ const Sequelize = require('sequelize');
 const sequelize = new Sequelize(
   'postgres://postgres:mysecretpassword@localhost:5432/deel',
   {
-    logging: false // This quickly gets annoying
+    logging: false, // This quickly gets annoying
+    dialectOptions: {
+      decimalNumbers: true
+    },
   }
 );
 
@@ -23,7 +26,11 @@ Profile.init(
       allowNull: false
     },
     balance: {
-      type: Sequelize.DECIMAL(12, 2)
+      type: Sequelize.DECIMAL(12, 2),
+      get(f) {
+        const v = this.getDataValue(f)
+        return v && Number(v)
+      }
     },
     type: {
       type: Sequelize.ENUM('client', 'contractor')
@@ -61,7 +68,11 @@ Job.init(
     },
     price: {
       type: Sequelize.DECIMAL(12, 2),
-      allowNull: false
+      allowNull: false,
+      get(f) {
+        const v = this.getDataValue(f)
+        return v && Number(v)
+      }
     },
     paid: {
       type: Sequelize.BOOLEAN,
@@ -78,12 +89,12 @@ Job.init(
   }
 );
 
-Profile.hasMany(Contract, { as: 'Contractor', foreignKey: 'ContractorId' })
+Profile.hasMany(Contract, { as: 'Contractor', foreignKey: 'ContractorId', constraints: false })
 Contract.belongsTo(Profile, { as: 'Contractor', constraints: false })
-Profile.hasMany(Contract, { as: 'Client', foreignKey: 'ClientId' })
+Profile.hasMany(Contract, { as: 'Client', foreignKey: 'ClientId', constraints: false })
 Contract.belongsTo(Profile, { as: 'Client', constraints: false })
-Contract.hasMany(Job)
-Job.belongsTo(Contract)
+Contract.hasMany(Job, { constraints: false })
+Job.belongsTo(Contract, { constraints: false })
 
 module.exports = {
   sequelize,

@@ -89,7 +89,7 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
     // When passed '2020-08-15', sequelize was converting it to '2020-08-14 23:00:00.000 +00:00'
     // No idea why. Let's set time to 00:00:00Z
     const where = {
-        paid: 1
+        paid: true
     }
 
     if (start || end) {
@@ -107,7 +107,7 @@ app.get('/admin/best-profession', asyncHandler(async (req, res) => {
     const bestPayingProfession = await Job.findAll(
         {
             attributes: [
-                [sequelize.fn('sum', sequelize.col('price')), 'sum'],
+                [sequelize.cast(sequelize.fn('sum', sequelize.col('price')), 'float'), 'sum'],
                 [sequelize.col('Contract.Contractor.profession'), 'profession']
             ],
             where,
@@ -145,7 +145,7 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
     }
 
     const where = {
-        paid: 1
+        paid: true
     }
 
     if (start || end) {
@@ -163,7 +163,7 @@ app.get('/admin/best-clients', asyncHandler(async (req, res) => {
     const bestPayingClients = await Job.findAll(
         {
             attributes: [
-                [sequelize.fn('sum', sequelize.col('price')), 'paid'],
+                [sequelize.cast(sequelize.fn('sum', sequelize.col('price')), 'float'), 'paid'],
                 // Apparently, sqlite does not support CONCAT, only the || operator,
                 // But sequelize queries for CONCAT, which errors
                 // Just add them in JS
@@ -331,7 +331,7 @@ app.post('/balances/deposit/:userId', getProfile, asyncHandler(async (req, res) 
     const sumPaymentsDue = await Job.findOne(
         {
             attributes: [
-                [sequelize.fn('sum', sequelize.col('price')), 'sum'],
+                [sequelize.cast(sequelize.fn('sum', sequelize.col('price')), 'float'), 'sum'],
             ],
             where: {
                 paid: null,
