@@ -1,10 +1,11 @@
 const Sequelize = require('sequelize');
 
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: './database.sqlite3',
-  logging: false // This quickly gets annoying
-});
+const sequelize = new Sequelize(
+  'postgres://postgres:mysecretpassword@localhost:5432/deel',
+  {
+    logging: false // This quickly gets annoying
+  }
+);
 
 class Profile extends Sequelize.Model { }
 Profile.init(
@@ -86,11 +87,11 @@ Job.init(
 );
 
 Profile.hasMany(Contract, { as: 'Contractor', foreignKey: 'ContractorId', })
-Contract.belongsTo(Profile, { as: 'Contractor'})
+Contract.belongsTo(Profile, { as: 'Contractor' })
 Profile.hasMany(Contract, { as: 'Client', foreignKey: 'ClientId' })
 Contract.belongsTo(Profile, { as: 'Client' })
-Contract.hasMany(Job, )
-Job.belongsTo(Contract, )
+Contract.hasMany(Job,)
+Job.belongsTo(Contract,)
 
 module.exports = {
   sequelize,

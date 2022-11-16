@@ -7,9 +7,9 @@ beforeAll(async () => {
     await seed()
 })
 
-afterAll(async () => {
-    await seed()
-})
+// afterAll(async () => {
+//     await seed()
+// })
 
 describe('Get contracts per id', () => {
     it('Fails when id is invalid', async () => {
