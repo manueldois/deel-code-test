@@ -1,15 +1,15 @@
 const request = require('supertest');
 const app = require('./src/app')
-const { Job, Contract, Profile } = require('./src/model')
+const { Job, Contract, Profile, sequelize } = require('./src/model')
 const { seed } = require('./scripts/seedDb')
 
 beforeAll(async () => {
     await seed()
 })
 
-// afterAll(async () => {
-//     await seed()
-// })
+afterAll(async () => {
+    await sequelize.close()
+})
 
 describe('Get contracts per id', () => {
     it('Fails when id is invalid', async () => {
