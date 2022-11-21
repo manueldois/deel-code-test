@@ -1,7 +1,14 @@
 const Sequelize = require('sequelize');
 
+const DB_URL = process.env.DB_URL
+const DB_NAME = process.env.NODE_ENV === 'test' ? 'test' : process.env.DB_NAME
+
+if (!DB_URL || typeof DB_URL !== 'string') {
+  throw new Error(`DB_URL env var invalid. Got ${DB_URL}`)
+}
+
 const sequelize = new Sequelize(
-  'postgres://postgres:mysecretpassword@localhost:5432/deel',
+  DB_NAME ? `${DB_URL}/${DB_NAME}` : `${DB_URL}`,
   {
     logging: false // This quickly gets annoying
   }
