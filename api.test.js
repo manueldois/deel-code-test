@@ -378,14 +378,15 @@ describe('Pay for a job', () => {
         const req1 = request(app)
             .post('/jobs/2/pay')
             .set('profile_id', 1)
-            .expect(200)
 
         const req2 = request(app)
             .post('/jobs/2/pay')
             .set('profile_id', 1)
-            .expect(412)
 
         const [res1, res2] = await Promise.all([req1, req2])
+
+        expect([res1.status, res2.status]).toContain(412)        
+        expect([res1.status, res2.status]).toContain(200)
     })
 })
 
