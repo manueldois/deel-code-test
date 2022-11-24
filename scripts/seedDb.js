@@ -13,7 +13,7 @@ async function seed() {
     await Profile.sync({ force: true });
     await Contract.sync({ force: true });
     await Job.sync({ force: true });
-    
+
     // Insert data
 
     // Profiles
@@ -263,7 +263,9 @@ async function seed() {
     return
   }
 
-  console.log('Done seeding DB')
+  if (isEntryPoint) {
+    console.log('Done seeding DB')
+  }
 }
 
 module.exports = { seed }

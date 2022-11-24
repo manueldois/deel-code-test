@@ -1,0 +1,12 @@
+{
+  "port": 3002,
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "test",
+    "username": null,
+    "password": null,
+    "dialect": "postgres",
+    "logging": false
+  }
+}

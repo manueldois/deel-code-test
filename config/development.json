@@ -1,0 +1,12 @@
+{
+  "port": 3001,
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "deel",
+    "username": null,
+    "password": null,
+    "dialect": "postgres",
+    "logging": false
+  }
+}

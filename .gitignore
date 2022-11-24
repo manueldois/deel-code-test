@@ -2,3 +2,5 @@ node_modules
 .DS_STORE
 database.sqlite3
 .env
+config/secrets
+sqlite::memory:

@@ -1,7 +1,8 @@
 const app = require('./app');
 const { sequelize } = require('./model')
+const config = require('../config/config.js');
 
-const PORT = process.env.PORT || 3001
+const PORT = config.get('port')
 
 init();
 
@@ -11,7 +12,7 @@ async function init() {
     process.exit(1)
   });
 
-  console.log('Connection to DB has been established successfully.');
+  console.log(`Connected to DB at ${sequelize.options.host}:${sequelize.options.port ?? ''}`);
 
   try {
     app.listen(

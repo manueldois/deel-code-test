@@ -2,9 +2,28 @@
     "version": "1.0.0",
     "configurations": [
         {
+            "name": "Launch dev",
+            "program": "${workspaceFolder}/src/server.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "Launch prod",
+            "program": "${workspaceFolder}/src/server.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": { "NODE_ENV": "production" },
+        },
+        {
+            "name": "Nodemon dev",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
-            "name": "nodemon",
             "program": "${workspaceFolder}/src/server.js",
             "request": "launch",
             "restart": true,
@@ -17,12 +36,26 @@
             ],
             "type": "node"
         },
-        
         {
-            "type": "node",
+            "name": "Nodemon prod",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "program": "${workspaceFolder}/src/server.js",
             "request": "launch",
-            "name": "Jest: current file",
-            //"env": { "NODE_ENV": "test" },
+            "restart": true,
+            "runtimeExecutable": "nodemon",
+            "args": [
+                "--inspect"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "env": { "NODE_ENV": "production" },
+        },
+        {
+            "name": "Jest test",
+            "request": "launch",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args": [
                 "--watch",
@@ -30,6 +63,7 @@
                 "--config",
                 "jest.config.js"
             ],
+            "type": "node",
             "console": "integratedTerminal"
         }
     ]

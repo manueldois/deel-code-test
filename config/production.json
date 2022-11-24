@@ -1,0 +1,12 @@
+{
+  "port": 8080,
+  "db": {
+    "host": "database-2.cwphzsw99w5s.eu-west-3.rds.amazonaws.com",
+    "port": 5432,
+    "name": "deel",
+    "username": null,
+    "password": null,
+    "dialect": "postgres",
+    "logging": false
+  }
+}
