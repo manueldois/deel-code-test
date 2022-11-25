@@ -11,6 +11,10 @@ This task asks to fix one endpoint and create new ones using Express and Sequeli
 
 I also setup and created integration tests using Jest and Supertest, and developed the TDD way.
 
+You can setup local config files, to be merged with shared configs, in config/secrets/[development/production/test].json.
+
+Start a local postgres instance.
+
 To run the tests: `npm test`
 
 # Challenge
