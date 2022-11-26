@@ -20,7 +20,7 @@ const config = convict({
     host: {
       doc: 'Database host name/IP',
       format: String,
-      default: 'sqlite::memory:',
+      default: null,
       env: 'DB_HOST',
       nullable: false,
     },
@@ -53,7 +53,7 @@ const config = convict({
     dialect: {
       doc: 'Database dialect',
       format: String,
-      default: 'sqlite',
+      default: 'postgres',
       env: 'DB_DIALECT',
     },
     logging: {
